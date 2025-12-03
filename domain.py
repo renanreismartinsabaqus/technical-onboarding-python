@@ -46,6 +46,40 @@ class QuantifiedPortfolio:
     def total(self, day: date) -> float:
         return sum(asset.amount() for asset in self.assets_on(day))
 
+    def sell(self, asset_id: str, day: date, amount: float) -> None:
+        target_asset = next(
+            (asset for asset in self.assets_on(day) if asset.id == asset_id),
+            None,
+        )
+
+        if target_asset is None:
+            raise ValueError(f"No asset with id '{asset_id}' on {day} to sell.")
+
+        if amount < 0:
+            raise ValueError("Amount to sell must be non-negative.")
+
+        quantity_to_sell = amount / target_asset.price
+
+        if quantity_to_sell > target_asset.quantity:
+            raise ValueError("Cannot sell more than the available quantity.")
+
+        target_asset.quantity -= quantity_to_sell
+
+    def buy(self, asset_id: str, day: date, amount: float) -> None:
+        target_asset = next(
+            (asset for asset in self.assets_on(day) if asset.id == asset_id),
+            None,
+        )
+
+        if target_asset is None:
+            raise ValueError(f"No asset with id '{asset_id}' on {day} to buy.")
+
+        if amount < 0:
+            raise ValueError("Amount to buy must be non-negative.")
+
+        quantity_to_buy = amount / target_asset.price
+        target_asset.quantity += quantity_to_buy
+
     def weight(self, asset_id: str, date: date) -> float:
         target_asset = next((asset for asset in self.assets_on(date) if asset.id == asset_id), None)
 
