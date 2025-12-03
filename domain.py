@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import date, timedelta
-from typing import List, Dict
+from typing import List, Dict, Optional
 from collections import defaultdict
 
 @dataclass
@@ -43,14 +43,17 @@ class QuantifiedPortfolio:
     def assets_on(self, day: date) -> List["QuantifiedAsset"]:
         return list(self._assets_by_date.get(day, []))
 
+    def _asset_on(self, asset_id: str, day: date) -> Optional["QuantifiedAsset"]:
+        return next(
+            (asset for asset in self.assets_on(day) if asset.id == asset_id),
+            None,
+        )
+
     def total(self, day: date) -> float:
         return sum(asset.amount() for asset in self.assets_on(day))
 
     def sell(self, asset_id: str, day: date, amount: float) -> None:
-        target_asset = next(
-            (asset for asset in self.assets_on(day) if asset.id == asset_id),
-            None,
-        )
+        target_asset = self._asset_on(asset_id, day)
 
         if target_asset is None:
             raise ValueError(f"No asset with id '{asset_id}' on {day} to sell.")
@@ -66,10 +69,7 @@ class QuantifiedPortfolio:
         target_asset.quantity -= quantity_to_sell
 
     def buy(self, asset_id: str, day: date, amount: float) -> None:
-        target_asset = next(
-            (asset for asset in self.assets_on(day) if asset.id == asset_id),
-            None,
-        )
+        target_asset = self._asset_on(asset_id, day)
 
         if target_asset is None:
             raise ValueError(f"No asset with id '{asset_id}' on {day} to buy.")
@@ -81,8 +81,7 @@ class QuantifiedPortfolio:
         target_asset.quantity += quantity_to_buy
 
     def weight(self, asset_id: str, date: date) -> float:
-        target_asset = next((asset for asset in self.assets_on(date) if asset.id == asset_id), None)
-
+        target_asset = self._asset_on(asset_id, date)
         return target_asset.amount() / self.total(date)
 
     def daily_positions(self, start: date, end: date) -> Dict[date, DailyPosition]:
